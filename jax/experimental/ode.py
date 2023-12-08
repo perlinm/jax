@@ -172,8 +172,6 @@ def odeint(func, y0, t, *args, rtol=1.4e-8, atol=1.4e-8, mxstep=jnp.inf, hmax=jn
     if not isinstance(arg, core.Tracer) and not core.valid_jaxtype(arg):
       raise TypeError(
         f"The contents of odeint *args must be arrays or scalars, but got {arg}.")
-  if not jnp.issubdtype(t.dtype, jnp.floating):
-    raise TypeError(f"t must be an array of floats, but got {t}.")
 
   converted, consts = custom_derivatives.closure_convert(func, y0, t[0], *args)
   return _odeint_wrapper(converted, rtol, atol, mxstep, hmax, y0, t, *args, *consts)
@@ -242,8 +240,7 @@ def _odeint_rev(func, rtol, atol, mxstep, hmax, res, g):
   def scan_fun(carry, i):
     y_bar, t0_bar, args_bar = carry
     # Compute effect of moving measurement time
-    # `t_bar` should not be complex as it represents time
-    t_bar = jnp.dot(func(ys[i], ts[i], *args), g[i]).real
+    t_bar = jnp.dot(func(ys[i], ts[i], *args), g[i])
     t0_bar = t0_bar - t_bar
     # Run augmented system backwards to previous observation
     _, y_bar, t0_bar, args_bar = odeint(
